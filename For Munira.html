@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<!-- saved from url=(0054)file:///C:/Users/LENOVO/Downloads/heart-animation.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heart Animation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  canvas { display: block; }
+  .name {
+    color: rgba(220, 80, 90, 0.9);
+    font-size: 2rem;
+    letter-spacing: 8px;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    margin-top: 18px;
+    font-style: italic;
+    opacity: 0;
+    animation: fadeInName 2s ease 1s forwards;
+  }
+  @keyframes fadeInName {
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="1536" height="664"></canvas>
+<div class="name">Munira</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight * 0.85;
+}
+resize();
+
+const W = canvas.width;
+const H = canvas.height;
+const cx = W / 2;
+const cy = H / 2;
+const SCALE = Math.min(W, H) * 0.026;
+
+function heartPoint(t) {
+  const x = cx + SCALE * 16 * Math.pow(Math.sin(t), 3);
+  const y = cy - SCALE * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+  return { x, y };
+}
+
+const HEART_PTS = [];
+for (let i = 0; i < 500; i++) {
+  HEART_PTS.push(heartPoint((i / 500) * Math.PI * 2));
+}
+
+class Thread {
+  constructor() { this.reset(true); }
+
+  reset(init = false) {
+    const ai = Math.floor(Math.random() * HEART_PTS.length);
+    const bi = Math.floor(Math.random() * HEART_PTS.length);
+    this.x1 = HEART_PTS[ai].x;
+    this.y1 = HEART_PTS[ai].y;
+    this.x2 = HEART_PTS[bi].x;
+    this.y2 = HEART_PTS[bi].y;
+
+    const s = 5;
+    this.ox1 = (Math.random() - 0.5) * s;
+    this.oy1 = (Math.random() - 0.5) * s;
+    this.ox2 = (Math.random() - 0.5) * s;
+    this.oy2 = (Math.random() - 0.5) * s;
+
+    this.maxAlpha = 0.25 + Math.random() * 0.5;
+    this.alpha = init ? Math.random() * this.maxAlpha : 0;
+    this.phase = init ? (Math.random() < 0.5 ? 'in' : 'out') : 'in';
+    // Much faster fade speed
+    this.fadeSpeed = 0.035 + Math.random() * 0.055;
+    this.holdTimer = 0;
+    this.r = 200 + Math.floor(Math.random() * 55);
+    this.g = 30 + Math.floor(Math.random() * 50);
+    this.b = 50 + Math.floor(Math.random() * 50);
+  }
+
+  update() {
+    if (this.phase === 'in') {
+      this.alpha += this.fadeSpeed;
+      if (this.alpha >= this.maxAlpha) {
+        this.alpha = this.maxAlpha;
+        this.phase = 'hold';
+        // Very short hold
+        this.holdTimer = 2 + Math.floor(Math.random() * 8);
+      }
+    } else if (this.phase === 'hold') {
+      this.holdTimer--;
+      if (this.holdTimer <= 0) this.phase = 'out';
+    } else {
+      this.alpha -= this.fadeSpeed * 0.8;
+      if (this.alpha <= 0) this.reset();
+    }
+  }
+
+  draw() {
+    if (this.alpha <= 0) return;
+    ctx.beginPath();
+    ctx.moveTo(this.x1 + this.ox1, this.y1 + this.oy1);
+    ctx.lineTo(this.x2 + this.ox2, this.y2 + this.oy2);
+    ctx.strokeStyle = `rgba(${this.r}, ${this.g}, ${this.b}, ${this.alpha})`;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+}
+
+const threads = Array.from({ length: 400 }, () => new Thread());
+
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  threads.forEach(t => { t.update(); t.draw(); });
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+
+window.addEventListener('resize', resize);
+</script>
+
+
+</body></html>
